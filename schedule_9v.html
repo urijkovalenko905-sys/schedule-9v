@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>📚 Расписание 9«В»</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(255,255,255,0.07);
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #475569;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG grid */
+  body::before {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      linear-gradient(rgba(245,158,11,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,158,11,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+  }
+
+  .app {
+    position:relative; z-index:1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 16px 80px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align:center;
+    padding: 24px 0 20px;
+  }
+  .class-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 12px; font-weight:700; letter-spacing:.05em;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .clock {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(52px, 15vw, 72px);
+    font-weight:600;
+    letter-spacing:-2px;
+    line-height:1;
+    color: var(--text);
+  }
+  .clock span { color: var(--accent); }
+  .date-line {
+    font-size:13px; color:var(--text2); margin-top:6px; font-weight:500;
+  }
+
+  /* ── STATUS CARD ── */
+  .status-card {
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin: 16px 0;
+    position:relative; overflow:hidden;
+  }
+  .status-card.active {
+    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+    border: 1px solid rgba(16,185,129,0.3);
+  }
+  .status-card.break {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05));
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .status-card.upcoming {
+    background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04));
+    border: 1px solid rgba(245,158,11,0.25);
+  }
+  .status-card.free {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .status-card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:currentColor; opacity:0.4;
+  }
+  .status-card.active::before { background: var(--green); }
+  .status-card.break::before { background: var(--accent2); }
+  .status-card.upcoming::before { background: var(--accent); }
+  .status-card.free::before { background: var(--text3); }
+
+  .status-tag {
+    font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    margin-bottom:6px; opacity:.7;
+  }
+  .status-card.active .status-tag { color: var(--green); }
+  .status-card.break .status-tag { color: var(--accent2); }
+  .status-card.upcoming .status-tag { color: var(--accent); }
+  .status-card.free .status-tag { color: var(--text3); }
+
+  .status-main {
+    font-size:20px; font-weight:800; line-height:1.2;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .status-sub {
+    font-size:13px; color:var(--text2); margin-top:6px;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .status-sub .chip {
+    background: rgba(255,255,255,0.07);
+    border-radius: 6px; padding: 2px 8px;
+    font-size:12px; font-weight:600;
+  }
+  .countdown-big {
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px; font-weight:600;
+    color: var(--accent);
+  }
+
+  /* ── DAY TABS ── */
+  .day-tabs {
+    display:grid; grid-template-columns: repeat(6,1fr);
+    gap:6px; margin:16px 0;
+  }
+  .day-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 4px;
+    text-align:center;
+    cursor:pointer;
+    transition: all .15s;
+    color: var(--text2);
+    font-size:12px; font-weight:700;
+    font-family:'Manrope',sans-serif;
+    letter-spacing:.02em;
+  }
+  .day-btn:hover { border-color: rgba(245,158,11,0.4); color:var(--text); }
+  .day-btn.today { border-color: rgba(245,158,11,0.4); color:var(--accent); }
+  .day-btn.active {
+    background: var(--accent); color: #000;
+    border-color: var(--accent);
+    font-weight:900;
+  }
+  .day-btn .dot {
+    display:block; width:4px; height:4px; border-radius:50%;
+    background:var(--accent); margin:4px auto 0; opacity:0;
+  }
+  .day-btn.today .dot { opacity:1; }
+  .day-btn.active .dot { background:#000; opacity:0.5; }
+
+  /* ── SCHEDULE LIST ── */
+  .section-label {
+    font-size:11px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--text3);
+    margin: 20px 0 10px;
+  }
+  .lesson-item {
+    display:flex; align-items:center; gap:12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    transition: all .15s;
+    position:relative; overflow:hidden;
+  }
+  .lesson-item.current {
+    border-color: rgba(16,185,129,0.4);
+    background: rgba(16,185,129,0.06);
+  }
+  .lesson-item.current::before {
+    content:'';
+    position:absolute; left:0; top:0; bottom:0; width:3px;
+    background: var(--green);
+  }
+  .lesson-item.done {
+    opacity:.4;
+  }
+  .lesson-item.next {
+    border-color: rgba(245,158,11,0.3);
+  }
+  .lesson-item.next::before {
+    content:'';
+    position:absolute; left:0; top:0; bottom:0; width:3px;
+    background: var(--accent);
+  }
+  .lesson-num {
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; font-weight:600; color:var(--text3);
+    min-width:16px; text-align:center;
+  }
+  .lesson-name {
+    flex:1; font-size:15px; font-weight:700;
+  }
+  .lesson-meta {
+    text-align:right;
+  }
+  .lesson-time {
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; color:var(--text2); font-weight:500;
+  }
+  .lesson-room {
+    font-size:10px; color:var(--text3); font-weight:600;
+    margin-top:2px;
+  }
+
+  /* ── BELL TABLE ── */
+  .bell-grid {
+    display:grid; grid-template-columns: 1fr 1fr;
+    gap:6px;
+  }
+  .bell-item {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .bell-item.current-bell {
+    border-color: rgba(16,185,129,0.4);
+    background:rgba(16,185,129,0.06);
+  }
+  .bell-n {
+    font-size:11px; font-weight:700; color:var(--text3);
+  }
+  .bell-t {
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; font-weight:600; color:var(--text2);
+  }
+
+  /* ── FOOTER ── */
+  .footer-info {
+    text-align:center; margin-top:24px;
+    font-size:11px; color:var(--text3);
+    line-height:1.6;
+  }
+
+  /* scroll reveal */
+  @keyframes slideUp {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .app > * { animation: slideUp .3s ease both; }
+  .app > *:nth-child(1) { animation-delay:.05s; }
+  .app > *:nth-child(2) { animation-delay:.1s; }
+  .app > *:nth-child(3) { animation-delay:.15s; }
+  .app > *:nth-child(4) { animation-delay:.2s; }
+  .app > *:nth-child(5) { animation-delay:.25s; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="class-badge">📚 9 «В» · 1 смена</div>
+    <div class="clock" id="clock">--<span>:</span>--<span>:</span>--</div>
+    <div class="date-line" id="dateLine">Загрузка...</div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-card free" id="statusCard">
+    <div class="status-tag" id="statusTag">Статус</div>
+    <div class="status-main" id="statusMain">...</div>
+    <div class="status-sub" id="statusSub"></div>
+  </div>
+
+  <!-- DAY TABS -->
+  <div class="day-tabs" id="dayTabs">
+    <button class="day-btn" data-day="1" onclick="selectDay(1)">пн<span class="dot"></span></button>
+    <button class="day-btn" data-day="2" onclick="selectDay(2)">вт<span class="dot"></span></button>
+    <button class="day-btn" data-day="3" onclick="selectDay(3)">ср<span class="dot"></span></button>
+    <button class="day-btn" data-day="4" onclick="selectDay(4)">чт<span class="dot"></span></button>
+    <button class="day-btn" data-day="5" onclick="selectDay(5)">пт<span class="dot"></span></button>
+    <button class="day-btn" data-day="6" onclick="selectDay(6)">сб<span class="dot"></span></button>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="section-label" id="schedLabel">Расписание · Понедельник</div>
+  <div id="lessonList"></div>
+
+  <!-- BELL SCHEDULE -->
+  <div class="section-label" id="bellLabel">Звонки</div>
+  <div class="bell-grid" id="bellGrid"></div>
+
+  <div class="footer-info">МАОУ СОШ №16 · 2025–2026 уч. год<br>Время московское (UTC+3)</div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────
+
+const DAY_NAMES = ['','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+
+// Bell schedules (1st shift)
+const BELLS = {
+  // Пн, Чт
+  'пнчт': [
+    {n:1, s:'08:00', e:'08:30'},
+    {n:2, s:'08:40', e:'09:20'},
+    {n:3, s:'09:35', e:'10:15'},
+    {n:4, s:'10:30', e:'11:10'},
+    {n:5, s:'11:25', e:'12:00'},
+    {n:6, s:'12:10', e:'12:45'},
+    {n:7, s:'12:50', e:'13:25'},
+  ],
+  // Вт, Ср, Пт
+  'втсрпт': [
+    {n:1, s:'08:00', e:'08:40'},
+    {n:2, s:'08:50', e:'09:30'},
+    {n:3, s:'09:40', e:'10:20'},
+    {n:4, s:'10:35', e:'11:15'},
+    {n:5, s:'11:30', e:'12:10'},
+    {n:6, s:'12:15', e:'12:55'},
+    {n:7, s:'13:00', e:'13:40'},
+  ],
+  // Сб
+  'сб': [
+    {n:1, s:'08:00', e:'08:40'},
+    {n:2, s:'08:45', e:'09:25'},
+    {n:3, s:'09:40', e:'10:20'},
+    {n:4, s:'10:25', e:'11:05'},
+  ],
+};
+
+function getBellKey(day) {
+  if (day===1||day===4) return 'пнчт';
+  if (day===6) return 'сб';
+  return 'втсрпт';
+}
+
+// Lessons: day -> [{name, emoji, room}]
+// Rooms as shown on schedule sheet
+const SCHEDULE = {
+  1: [ // Понедельник
+    {name:'Разговор о важном', emoji:'☁️', room:'—'},
+    {name:'Биология',          emoji:'🌿', room:'41'},
+    {name:'География',         emoji:'🌍', room:'56'},
+    {name:'Физкультура',       emoji:'🏃', room:'—'},
+    {name:'Математика',        emoji:'📐', room:'50'},
+    {name:'Русский язык',      emoji:'✍️', room:'61'},
+  ],
+  2: [ // Вторник
+    {name:'Русский язык',   emoji:'✍️', room:'47'},
+    {name:'Физика',         emoji:'⚡', room:'27'},
+    {name:'Физкультура',    emoji:'🏃', room:'—'},
+    {name:'Информатика',    emoji:'💻', room:'28'},
+    {name:'Русский язык',   emoji:'✍️', room:'57'},
+    {name:'Литература',     emoji:'📖', room:'57'},
+    {name:'Математика',     emoji:'📐', room:'50'},
+  ],
+  3: [ // Среда
+    {name:'Труд',           emoji:'🔨', room:'4'},
+    {name:'История',        emoji:'🏛️', room:'47'},
+    {name:'Химия',          emoji:'🧪', room:'18'},
+    {name:'Обществознание', emoji:'📰', room:'58'},
+    {name:'Биология',       emoji:'🌿', room:'41'},
+    {name:'Англ. язык',     emoji:'🌐', room:'44/54'},
+    {name:'Математика',     emoji:'📐', room:'50'},
+  ],
+  4: [ // Четверг
+    {name:'Разговор о важном', emoji:'☁️', room:'—'},
+    {name:'Физика',         emoji:'⚡', room:'27'},
+    {name:'История',        emoji:'🏛️', room:'52'},
+    {name:'Математика',     emoji:'📐', room:'50'},
+    {name:'Физкультура',    emoji:'🏃', room:'—'},
+    {name:'Англ. язык',     emoji:'🌐', room:'44/54'},
+  ],
+  5: [ // Пятница
+    {name:'Литература',     emoji:'📖', room:'27'},
+    {name:'ОБЗР',           emoji:'🛡️', room:'55'},
+    {name:'Математика',     emoji:'📐', room:'52'},
+    {name:'География',      emoji:'🌍', room:'56'},
+    {name:'Химия',          emoji:'🧪', room:'18'},
+    {name:'Физика',         emoji:'⚡', room:'27'},
+    {name:'Литература',     emoji:'📖', room:'61'},
+  ],
+  6: [ // Суббота
+    {name:'История',            emoji:'🏛️', room:'49'},
+    {name:'Математика',         emoji:'📐', room:'50'},
+    {name:'Проект. деят.',      emoji:'🔬', room:'59'},
+    {name:'Англ. язык',         emoji:'🌐', room:'44/54'},
+  ],
+};
+
+// ─────────────────────────────────────────
+// TIME HELPERS
+// ─────────────────────────────────────────
+
+function getMSK() {
+  const now = new Date();
+  // Moscow = UTC+3
+  const utc = now.getTime() + now.getTimezoneOffset()*60000;
+  return new Date(utc + 3*3600000);
+}
+
+function toMin(hhmm) {
+  const [h,m] = hhmm.split(':').map(Number);
+  return h*60+m;
+}
+
+function minToStr(min) {
+  const h = Math.floor(Math.abs(min)/60);
+  const m = Math.abs(min)%60;
+  return `${h>0?h+'ч ':''}`+String(m).padStart(2,'0')+'м';
+}
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let selectedDay = null; // null = today
+let todayDay = null;
+
+function getJSDay(){ // 0=Sun..6=Sat → our 1=Mon..6=Sat
+  const d = getMSK().getDay();
+  if(d===0) return 7; // Sunday
+  return d;
+}
+
+// ─────────────────────────────────────────
+// UI
+// ─────────────────────────────────────────
+
+function selectDay(day) {
+  selectedDay = day;
+  renderSchedule();
+  renderDayTabs();
+}
+
+function renderDayTabs() {
+  const today = getJSDay();
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day);
+    btn.classList.remove('active','today');
+    if(d===today) btn.classList.add('today');
+    const shown = selectedDay||today;
+    if(d===shown) btn.classList.add('active');
+  });
+}
+
+function renderSchedule() {
+  const today = getJSDay();
+  const day = selectedDay || (today>=1&&today<=6 ? today : 1);
+  const isToday = day === today;
+
+  const lessons = SCHEDULE[day] || [];
+  const bellKey = getBellKey(day);
+  const bells   = BELLS[bellKey];
+
+  // label
+  document.getElementById('schedLabel').textContent =
+    `Расписание · ${DAY_NAMES[day]}${isToday?' (сегодня)':''}`;
+
+  // bells label
+  const bellDesc = bellKey==='пнчт'?'Пн / Чт' : bellKey==='втсрпт'?'Вт / Ср / Пт' : 'Суббота';
+  document.getElementById('bellLabel').textContent = `Звонки — ${bellDesc}`;
+
+  const msk = getMSK();
+  const nowMin = msk.getHours()*60 + msk.getMinutes();
+
+  // find current bell
+  let currentBell = -1;
+  if(isToday) {
+    bells.forEach((b,i) => {
+      if(nowMin >= toMin(b.s) && nowMin < toMin(b.e)) currentBell = i;
+    });
+  }
+
+  // render lessons
+  const list = document.getElementById('lessonList');
+  list.innerHTML = '';
+
+  lessons.forEach((lesson, i) => {
+    const bell = bells[i];
+    if(!bell) return;
+
+    let status = '';
+    if(isToday) {
+      if(nowMin >= toMin(bell.s) && nowMin < toMin(bell.e)) status = 'current';
+      else if(nowMin >= toMin(bell.e)) status = 'done';
+      else if(status===''&&currentBell===-1&&nowMin<toMin(bell.s)&&(i===0||(bells[i-1]&&nowMin>=toMin(bells[i-1].e)))) status='next';
+      else if(currentBell>=0 && i===currentBell+1) status='next';
+    }
+
+    const div = document.createElement('div');
+    div.className = 'lesson-item'+(status?' '+status:'');
+    div.innerHTML = `
+      <div class="lesson-num">${i+1}</div>
+      <div class="lesson-name">${lesson.emoji} ${lesson.name}</div>
+      <div class="lesson-meta">
+        <div class="lesson-time">${bell.s}–${bell.e}</div>
+        <div class="lesson-room">${lesson.room!=='—'?'каб. '+lesson.room:'—'}</div>
+      </div>`;
+    list.appendChild(div);
+  });
+
+  // render bells
+  const bg = document.getElementById('bellGrid');
+  bg.innerHTML = '';
+  bells.forEach((b,i) => {
+    const div = document.createElement('div');
+    div.className = 'bell-item'+(isToday&&i===currentBell?' current-bell':'');
+    div.innerHTML = `<span class="bell-n">${b.n} урок</span><span class="bell-t">${b.s}–${b.e}</span>`;
+    bg.appendChild(div);
+  });
+}
+
+function renderStatus() {
+  const msk = getMSK();
+  const nowMin = msk.getHours()*60 + msk.getMinutes();
+  const today = getJSDay();
+
+  const card = document.getElementById('statusCard');
+  const tag  = document.getElementById('statusTag');
+  const main = document.getElementById('statusMain');
+  const sub  = document.getElementById('statusSub');
+
+  // Weekend or Sunday
+  if(today===7) {
+    card.className='status-card free';
+    tag.textContent='Сегодня';
+    main.innerHTML='🎉 Воскресенье — выходной!';
+    sub.innerHTML='<span class="chip">Уроков нет, отдыхай</span>';
+    return;
+  }
+
+  const lessons = SCHEDULE[today];
+  if(!lessons||lessons.length===0) {
+    card.className='status-card free';
+    tag.textContent='Сегодня';
+    main.innerHTML='🏖️ Уроков нет';
+    sub.innerHTML='';
+    return;
+  }
+
+  const bellKey = getBellKey(today);
+  const bells   = BELLS[bellKey];
+
+  // find state
+  const firstStart = toMin(bells[0].s);
+  const lastEnd    = toMin(bells[Math.min(lessons.length,bells.length)-1].e);
+
+  if(nowMin < firstStart) {
+    // before school
+    const diff = firstStart - nowMin;
+    card.className='status-card upcoming';
+    tag.textContent='До начала';
+    const l = lessons[0];
+    main.innerHTML=`${l.emoji} ${l.name}`;
+    sub.innerHTML=`<span class="chip">через ${minToStr(diff)}</span><span class="chip">${bells[0].s}</span>`;
+    return;
+  }
+
+  if(nowMin >= lastEnd) {
+    // after school
+    card.className='status-card free';
+    tag.textContent='Уроки закончились';
+    const diff = nowMin - lastEnd;
+    main.innerHTML='🏠 Можно идти домой!';
+    sub.innerHTML=`<span class="chip">${diff<60?minToStr(diff)+' назад':'Давно'}</span>`;
+    return;
+  }
+
+  // during school
+  for(let i=0; i<Math.min(lessons.length, bells.length); i++) {
+    const b = bells[i];
+    const ls = toMin(b.s), le = toMin(b.e);
+
+    if(nowMin >= ls && nowMin < le) {
+      // in lesson
+      const left = le - nowMin;
+      card.className='status-card active';
+      tag.textContent=`${i+1} урок · Идёт сейчас`;
+      main.innerHTML=`${lessons[i].emoji} ${lessons[i].name}`;
+      const roomTxt = lessons[i].room!=='—' ? `<span class="chip">каб. ${lessons[i].room}</span>` : '';
+      sub.innerHTML=`${roomTxt}<span class="chip">до конца: <span class="countdown-big" id="cdLesson">${minToStr(left)}</span></span>`;
+      return;
+    }
+
+    // break between i and i+1
+    if(i+1 < bells.length && i+1 < lessons.length) {
+      const nextS = toMin(bells[i+1].s);
+      if(nowMin >= le && nowMin < nextS) {
+        const left = nextS - nowMin;
+        card.className='status-card break';
+        tag.textContent=`Перемена`;
+        main.innerHTML=`⏰ → ${lessons[i+1].emoji} ${lessons[i+1].name}`;
+        const roomTxt = lessons[i+1].room!=='—'?`<span class="chip">каб. ${lessons[i+1].room}</span>`:'';
+        sub.innerHTML=`${roomTxt}<span class="chip">через <span class="countdown-big" id="cdBreak">${minToStr(left)}</span></span>`;
+        return;
+      }
+    }
+  }
+}
+
+function renderClock() {
+  const msk = getMSK();
+  const h = pad2(msk.getHours());
+  const m = pad2(msk.getMinutes());
+  const s = pad2(msk.getSeconds());
+  document.getElementById('clock').innerHTML =
+    `${h}<span>:</span>${m}<span>:</span>${s}`;
+
+  const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  document.getElementById('dateLine').textContent =
+    `${days[msk.getDay()]}, ${msk.getDate()} ${months[msk.getMonth()]} · МСК`;
+}
+
+// ─────────────────────────────────────────
+// TICK
+// ─────────────────────────────────────────
+let lastMin = -1;
+
+function tick() {
+  const msk = getMSK();
+  const nowMin = msk.getHours()*60 + msk.getMinutes();
+
+  renderClock();
+
+  // mark today tab
+  const today = getJSDay();
+  todayDay = today;
+  renderDayTabs();
+
+  // full re-render every minute or on load
+  if(nowMin !== lastMin) {
+    lastMin = nowMin;
+    renderStatus();
+    if(!selectedDay) renderSchedule();
+    else renderSchedule();
+  }
+}
+
+// Initial render
+renderDayTabs();
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
